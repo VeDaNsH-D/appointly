@@ -1,0 +1,73 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  CANCELLED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model Clinic {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  slots     Slot[]
+
+  @@map("clinics")
+}
+
+model Patient {
+  id        String    @id @default(uuid())
+  name      String
+  email     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+
+  @@map("patients")
+}
+
+model Slot {
+  id        String     @id @default(uuid())
+  clinicId  String
+  startTime DateTime
+  endTime   DateTime
+  status    SlotStatus @default(AVAILABLE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  clinic    Clinic     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  bookings  Booking[]
+
+  @@index([clinicId, status])
+  @@index([startTime, endTime])
+  @@map("slots")
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  slotId      String
+  patientId   String
+  status      BookingStatus @default(CONFIRMED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  cancelledAt DateTime?
+  slot        Slot          @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  patient     Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([slotId])
+  @@index([patientId])
+  @@index([status])
+  @@map("bookings")
+}
